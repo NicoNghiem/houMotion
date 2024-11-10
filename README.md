@@ -9,19 +9,22 @@ The FKSkeleton class can be used as a standalone but we provide utils in skeluti
 
 We assume the Agent is the first Prim of the first input geometry in a Python SOP
 
-`import hou
+```
+import hou
 from fkskeleton import FKSkeleton
 import houdini.skel_utils as skelutils
 
 agent = hou.pwd().geometry().prim(0)
 
-skel = skelutils.fromAgentRig(agent.rig())`
+skel = skelutils.fromAgentRig(agent.rig())
+```
 
 ### Convert FKSkeleton into a Kinefx skeleton
 
 This code is written in a Python SOP to contain the geometry
 
-`import hou
+```
+import hou
 from fkskeleton import FKSkeleton
 import houdini.skel_utils as skelutils
 
@@ -33,4 +36,5 @@ xforms[:,:,0,3] = 0.1
 
 skel = FKSkeleton(parents, rest_transforms=xforms)
 
-hou.pwd().geometry().merge(skelutils.toKinefxGeo(skel))`
+hou.pwd().geometry().merge(skelutils.toKinefxGeo(skel))
+```
