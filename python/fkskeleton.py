@@ -91,6 +91,17 @@ class FKSkeleton:
             else:
                 self._joint_names = idx
         return
+    
+    def _invalidateCache(self):
+        """
+        Call this to invalidate the cache. This function is meant to be called when changing the underlyingstructure
+        of the hierarchy which makes the stored hierarchy invalid
+        """
+        self._matrix_hierarchy = None
+        self._depth_hierarchy = None
+        self._transform_hierarchy = None
+
+        return
 
     def _buildMatrixHierarchy(self):
         """
@@ -248,7 +259,7 @@ class FKSkeleton:
         local = worldXforms.copy()
         childIdx = np.arange(self.jointCount()).delete(self.roots())
         parentIdx = self.getParent(childIdx)
-        local[:,childIdx,:,:] = worldXforms[:,childIdx,:,:] @ np.linalg.inv(world[:,parentIdx,:,:])
+        local[:,childIdx,:,:] = np.linalg.inv(worldXforms[:,parentIdx,:,:]) @ worldXforms[:,childIdx,:,:] 
         return local
     
     def worldFromLocal(self, localXforms: np.array) -> np.array:
@@ -263,7 +274,7 @@ class FKSkeleton:
         for row in depthHierarchy:
                 childIdx = np.where(row>=0)[0].astype(int)
                 parentIdx = row[childIdx]
-                world[:,childIdx,:,:] = local[:,childIdx,:,:] @ world[:,parentIdx,:,:]
+                world[:,childIdx,:,:] = world[:,parentIdx,:,:] @ localXforms[:,childIdx,:,:]
         return world
     
     # Rig
@@ -279,3 +290,4 @@ class FKSkeleton:
         Returns the World Rest Pose
         """
         return self.worldFromLocal(self.localRestPose())
+    
