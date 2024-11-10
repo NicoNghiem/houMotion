@@ -1,6 +1,6 @@
 import numpy as np
 
-class fkskeleton:
+class FKSkeleton:
     """
     Represents a FK skeleton
     A FK Skeleton is a hierarchy where:
@@ -22,7 +22,8 @@ class fkskeleton:
     _transform_hierarchy (*): the Hierarchy represented as an array where array[i] = children of i
                         np.array of size (jointCount,) of np.array
     _joint_names (optional): the names of the joints. will fill any non given names by "joint_idx"
-
+    _rest_transforms (optional): the rest local transforms. will fill any non given with identity matrix
+    
     (*) those attributes are None by default but are cached the first time they are computed
     """
 
@@ -31,8 +32,9 @@ class fkskeleton:
     _depth_hierarchy = None
     _transform_hierarchy = None
     _joint_names = None
+    _rest_transforms = None
 
-    def __init__(self, parent_hierarchy=[], joint_names=[],check=True):
+    def __init__(self, parent_hierarchy=[], joint_names=[], rest_transforms = None,check=True):
         """
         Initialize given an hierarchy and joint names
         """
@@ -46,7 +48,15 @@ class fkskeleton:
         else:
             self._joint_names = joint_names
 
+        #initialize rest transforms
+        self._rest_transforms = np.zeros((1,self.jointCount(),4,4))
+        self._rest_transforms[:,:] = np.eye(4)
+        if rest_transforms is not None:
+            if self._rest_transforms.shape == rest_transforms.shape:
+                self._rest_transforms = rest_transforms
+
         self._validate()
+        return
 
     def _validate(self):
         """
@@ -59,9 +69,11 @@ class fkskeleton:
         detect = np.where(self.parentHierarchy()>=self.jointCount())[0]
         if len(detect)>=1:
             raise ValueError("Detected Out of Bound Parent index")
+        
         #check that we have at least one root
-        if self.jointCount()==0:
+        if self.roots().shape[0]==0:
             raise ValueError("No root detected")
+        
         #check there are no cycles
         #one easy way to do this is to compute the depth hierarchy as it fails if there is a cycle
         self._buildDepthHierarchy()
@@ -134,7 +146,7 @@ class fkskeleton:
         self._max_depth = iter
         return
     
-    #Public Methods
+    # Public Methods
 
     # Hierarchy methods
 
@@ -254,4 +266,16 @@ class fkskeleton:
                 world[:,childIdx,:,:] = local[:,childIdx,:,:] @ world[:,parentIdx,:,:]
         return world
     
+    # Rig
+
+    def localRestPose(self) -> np.array:
+        """
+        Returns the local Rest Pose
+        """
+        return self._rest_transforms
     
+    def worldRestPose(self) -> np.array:
+        """
+        Returns the World Rest Pose
+        """
+        return self.worldFromLocal(self.localRestPose())
