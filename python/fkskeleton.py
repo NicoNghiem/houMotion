@@ -159,6 +159,59 @@ class FKSkeleton:
     
     # Public Methods
 
+    # Update methods
+
+    def setRestPoseFromLocal(self, localXforms: np.array, joints = None):
+        """
+        Replace the rest pose by the one provided in terms of local transforms.
+        Args:
+            localXforms: an array of xforms in local space
+            joints (optional): a np.array of joint names or joint ids that is used as mask for the update
+        """
+        if joints:
+            isStr = isinstance(joints[0], str)
+            if isStr:
+                ids = self.jointId(joints)
+            else:
+                ids = joints
+            # remove joints out of bounds
+            ids = ids[np.where(ids>=0)]
+            ids = ids[np.where(ids< self.jointCount())]
+        else:
+            if localXforms.size != (self.jointCount() * 16):
+                raise TypeError("Size does not match. Expecting {} elements, {} elements provided".format(str(self.jointCount()*16, localXforms.size)))
+            ids = np.arange(self.jointCount())
+
+        self._rest_transforms[0,ids] = localXforms[:]
+        return
+    
+    def setRestPoseFromWorld(self, worldXforms: np.array, joints=None):
+        """
+        Replace the rest pose by the one provided in terms of world transforms. 
+        When using joints to do masking, maintains the world transforms of the unmasked joints
+        Args:
+            worldXforms: an array of xforms in world space
+            joints (optional): a np.array of joint names or joint ids that is used as mask for the update
+        """
+        if joints:
+            isStr = isinstance(joints[0], str)
+            if isStr:
+                ids = self.jointId(joints)
+            else:
+                ids = joints
+            # remove joints out of bounds
+            ids = ids[np.where(ids>=0)]
+            ids = ids[np.where(ids< self.jointCount())]
+        else:
+            if worldXforms.size != (self.jointCount() * 16):
+                raise TypeError("Size does not match. Expecting {} elements, {} elements provided".format(str(self.jointCount()*16, localXforms.size)))
+            ids = np.arange(self.jointCount())
+
+        worldRestPose = self.worldRestPose()
+        worldRestPose[0,ids] = worldXforms[:]
+        self._rest_transforms = self.localFromWorld(worldRestPose)
+        return
+
     # Hierarchy methods
 
     def parentHierarchy(self) -> np.array:
@@ -276,6 +329,28 @@ class FKSkeleton:
                 parentIdx = row[childIdx]
                 world[:,childIdx,:,:] = world[:,parentIdx,:,:] @ localXforms[:,childIdx,:,:]
         return world
+    
+    def offsetFromLocal(self, localXforms: np.array) -> np.array:
+        """
+        From a batch of poses in Local Space, compute the offsets that returns the given poses once 
+        applied to the rest pose
+        Args:
+            localXforms: np.array of size (:, jointCount, 4, 4)
+        Output:
+            np.array of size (:, jointCount, 4, 4) that verifies: output @ restXforms = localXforms
+        """
+        return localXforms[:] @ self.localRestPose()[0]
+    
+    def offsetFromWorld(self, worldXforms: np.array) -> np.array:
+        """
+        From a batch of poses in World Space, compute the offsets that returns the given poses once 
+        applied to the rest pose
+        Args:
+            localXforms: np.array of size (:, jointCount, 4, 4)
+        Output:
+            np.array of size (:, jointCount, 4, 4) that verifies: output @ restXforms = localXforms
+        """
+        return self.offsetFromLocal(self.localFromWorld(worldXforms))
     
     # Rig
 
