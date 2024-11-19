@@ -240,6 +240,16 @@ class FKSkeleton:
             self._buildTransformHierarchy()
         return self._transform_hierarchy
     
+    def matrixHierarchy(self) -> np.array:
+        """
+        Returns the matrix hierarchy
+        matrix_hierarchy[i][j] = 1 if i is j's parent
+                                 0 otherwise
+        """
+        if self._matrix_hierarchy is None:
+            self._buildMatrixHierarchy()
+        return self._matrix_hierarchy
+    
     def maxDepth(self) -> np.array:
         if self._depth_hierarchy is None:
             self._buildDepthHierarchy()
@@ -278,6 +288,24 @@ class FKSkeleton:
         Returns all the joint names
         """
         return self._joint_names
+
+    def allJointPaths(self):
+        """
+        Return the Joints as their path
+        a---b---c
+        |
+        d
+        would then be {a, a/b, a/b/c, a/d}
+        """
+        jointNames = self.allJointNames()
+        paths = jointNames.copy()
+        depth_hierarchy = self.depthHierarchy()
+        delimiter = np.array(['/'])
+        for col in depth_hierarchy:
+            children = np.where(col>=0)[0].astype(int)
+            parents = col[children]
+            paths[children] = paths[parents] + delimiter + jointNames[children]
+        return paths
 
     def jointName(self, ids: np.array) -> np.array:
         """
