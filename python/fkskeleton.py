@@ -44,7 +44,7 @@ class FKSkeleton:
             self._parent_hierarchy = parent_hierarchy.astype(int)
 
         if isinstance(joint_names, list):
-            self._joint_names = np.array(joint_names)
+            self._joint_names = np.array(joint_names, dtype=object)
         else:
             self._joint_names = joint_names
 

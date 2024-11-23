@@ -37,7 +37,7 @@ def toKinefxGeo(fk: FKSkeleton) -> hou.Geometry:
 
     geo.setPointFloatAttribValues('P',t)
     geo.setPointFloatAttribValues('transform', transform)
-    geo.setPointFloatAttribValues('localtransform', localxforms)
+    geo.setPointFloatAttribValues('localtransform', localxforms.flatten())
 
     parent_hierarchy = fk.parentHierarchy().tolist()
     for childId, parentId in enumerate(parent_hierarchy):
